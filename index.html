@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#18181b">
+<title>Journal — JandreS</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --bg:#18181b;
+    --surface:#212124;
+    --surface2:#27272a;
+    --border:#3f3f46;
+    --text:#fafafa;
+    --muted:#a1a1aa;
+    --amber:#f59e0b;
+    --amber-dim:#92651a;
+    --green:#22c55e;
+    --red:#ef4444;
+    --mono: ui-monospace, "SF Mono", "Menlo", "Consolas", "Liberation Mono", monospace;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--mono);}
+  body{padding-bottom:90px; min-height:100vh;}
+  .wrap{max-width:560px;margin:0 auto;padding:18px 14px 0;}
+
+  header.top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;}
+  header.top h1{font-size:15px;letter-spacing:.12em;font-weight:600;margin:0;color:var(--text);}
+  header.top h1 span{color:var(--amber);}
+  .streak-badge{font-size:12px;padding:4px 9px;border-radius:3px;border:1px solid var(--border);color:var(--muted);}
+  .streak-badge.up{color:var(--green);border-color:#1d3a26;}
+  .streak-badge.down{color:var(--red);border-color:#3a1d1d;}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px 6px;text-align:center;}
+  .stat b{display:block;font-size:16px;font-weight:600;}
+  .stat span{display:block;font-size:9.5px;color:var(--muted);letter-spacing:.06em;margin-top:3px;text-transform:uppercase;}
+  .stat.pos b{color:var(--green);}
+  .stat.neg b{color:var(--red);}
+
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px 12px 6px;margin-bottom:16px;}
+  .chart-card .label{font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;}
+
+  .filters{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:2px;}
+  .filters::-webkit-scrollbar{display:none;}
+  .chip{flex:0 0 auto;font-size:11.5px;padding:6px 11px;border-radius:20px;border:1px solid var(--border);color:var(--muted);background:transparent;white-space:nowrap;}
+  .chip.active{border-color:var(--amber);color:var(--amber);}
+
+  .empty{text-align:center;color:var(--muted);font-size:12.5px;padding:50px 20px;line-height:1.6;}
+  .empty b{display:block;color:var(--text);font-size:14px;margin-bottom:6px;}
+
+  .trade{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:11px 12px;margin-bottom:8px;}
+  .trade .row1{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .trade .tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+  .tag{font-size:10px;padding:2px 7px;border-radius:3px;background:var(--surface2);color:var(--muted);letter-spacing:.03em;}
+  .tag.dir-buy{color:var(--green);}
+  .tag.dir-sell{color:var(--red);}
+  .result{font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:3px;}
+  .result.win{color:var(--green);background:#15291c;}
+  .result.loss{color:var(--red);background:#2a1616;}
+  .result.be{color:var(--muted);background:var(--surface2);}
+  .trade .row2{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);}
+  .trade .rval{font-weight:600;}
+  .trade .rval.pos{color:var(--green);}
+  .trade .rval.neg{color:var(--red);}
+  .trade .notes{margin-top:6px;font-size:11.5px;color:var(--muted);line-height:1.4;border-top:1px solid var(--border);padding-top:6px;}
+
+  .fab{position:fixed;bottom:20px;right:18px;width:52px;height:52px;border-radius:50%;background:var(--amber);color:#18181b;border:none;font-size:26px;font-weight:300;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(245,158,11,.35);z-index:30;}
+  .fab:active{transform:scale(.95);}
+
+  .topbar-actions{display:flex;gap:8px;}
+  .icon-btn{width:30px;height:30px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;display:flex;align-items:center;justify-content:center;}
+
+  .sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:40;opacity:0;pointer-events:none;transition:opacity .2s;}
+  .sheet-backdrop.show{opacity:1;pointer-events:auto;}
+  .sheet{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--border);border-radius:14px 14px 0 0;z-index:41;max-height:88vh;overflow-y:auto;transform:translateY(100%);transition:transform .25s ease;padding:16px 16px calc(20px + env(safe-area-inset-bottom));}
+  .sheet.show{transform:translateY(0);}
+  .sheet-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px;}
+  .sheet h2{font-size:14px;letter-spacing:.06em;margin:0 0 14px;color:var(--amber);}
+
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:10.5px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px;}
+  .field input, .field select, .field textarea{
+    width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:4px;
+    color:var(--text);font-family:var(--mono);font-size:14px;padding:9px 10px;
+  }
+  .field textarea{resize:vertical;min-height:50px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .seg{display:flex;border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+  .seg button{flex:1;background:transparent;border:none;color:var(--muted);font-family:var(--mono);font-size:13px;padding:9px 0;}
+  .seg button.active{background:var(--amber);color:#18181b;font-weight:600;}
+  .seg.result button.active.win{background:var(--green);color:#0a160d;}
+  .seg.result button.active.loss{background:var(--red);color:#1a0a0a;}
+  .seg.result button.active.be{background:var(--border);color:var(--text);}
+
+  .sheet-actions{display:flex;gap:10px;margin-top:6px;}
+  .btn{flex:1;padding:11px 0;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--text);font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.04em;}
+  .btn.primary{background:var(--amber);border-color:var(--amber);color:#18181b;}
+  .btn.danger{border-color:#5a1f1f;color:var(--red);}
+
+  .detail-row{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid var(--border);}
+  .detail-row span:first-child{color:var(--muted);}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <h1>JOURNAL <span>— JandreS</span></h1>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="exportBtn" title="Exportar respaldo">⭳</button>
+      <button class="icon-btn" id="importBtn" title="Importar respaldo">⭱</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none">
+    </div>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="chart-card">
+    <div class="label">Curva de equity (en R)</div>
+    <svg id="chart" width="100%" height="90" viewBox="0 0 300 90" preserveAspectRatio="none"></svg>
+  </div>
+
+  <div class="filters" id="filters"></div>
+
+  <div id="list"></div>
+</div>
+
+<button class="fab" id="addBtn">+</button>
+
+<div class="sheet-backdrop" id="backdrop"></div>
+
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <h2 id="sheetTitle">NUEVO TRADE</h2>
+  <form id="tradeForm">
+    <div class="field">
+      <label>Instrumento</label>
+      <select id="f_instrument">
+        <option value="US30.cash">US30.cash</option>
+        <option value="US100.cash">US100.cash</option>
+        <option value="XAUUSD">XAUUSD</option>
+        <option value="otro">Otro</option>
+      </select>
+    </div>
+    <div class="field" id="f_instrument_custom_wrap" style="display:none;">
+      <label>Especifica instrumento</label>
+      <input type="text" id="f_instrument_custom" placeholder="Ej: GBPUSD">
+    </div>
+
+    <div class="grid2">
+      <div class="field">
+        <label>Dirección</label>
+        <div class="seg" id="seg_dir">
+          <button type="button" data-val="buy" class="active">BUY</button>
+          <button type="button" data-val="sell">SELL</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Sesión</label>
+        <select id="f_session">
+          <option>NY AM</option>
+          <option>NY PM</option>
+          <option>Londres</option>
+          <option>Asia</option>
+          <option>Otra</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Setup</label>
+      <select id="f_setup">
+        <option>Silver Bullet</option>
+        <option>FVG</option>
+        <option>ORB</option>
+        <option>MSS / BOS</option>
+        <option>Judas Swing</option>
+        <option>Manual / Otro</option>
+      </select>
+    </div>
+
+    <div class="grid2">
+      <div class="field">
+        <label>Lote</label>
+        <input type="number" step="0.01" id="f_lot" placeholder="1.0">
+      </div>
+      <div class="field">
+        <label>RR planeado (1:R)</label>
+        <input type="number" step="0.1" id="f_rr" placeholder="2" required>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Resultado</label>
+      <div class="seg result" id="seg_result">
+        <button type="button" data-val="win" class="active win">WIN</button>
+        <button type="button" data-val="loss">LOSS</button>
+        <button type="button" data-val="be">BE</button>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="field">
+        <label>Precio entrada</label>
+        <input type="number" step="0.01" id="f_entry" placeholder="opcional">
+      </div>
+      <div class="field">
+        <label>Precio salida</label>
+        <input type="number" step="0.01" id="f_exit" placeholder="opcional">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Fecha</label>
+      <input type="datetime-local" id="f_date">
+    </div>
+
+    <div class="field">
+      <label>Notas / contexto ICT</label>
+      <textarea id="f_notes" placeholder="Ej: FVG en H1 tras barrido de liquidez, entrada en Silver Bullet AM..."></textarea>
+    </div>
+
+    <div class="sheet-actions">
+      <button type="button" class="btn" id="cancelBtn">Cancelar</button>
+      <button type="button" class="btn danger" id="deleteBtn" style="display:none;">Eliminar</button>
+      <button type="submit" class="btn primary">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<script>
+const STORAGE_KEY = 'jandres_journal_trades_v1';
+let trades = [];
+let editingId = null;
+let activeFilter = 'all';
+
+function load(){
+  try{ trades = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }catch(e){ trades = []; }
+}
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
+}
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+function rValue(t){
+  if(t.result === 'win') return t.rr;
+  if(t.result === 'loss') return -1;
+  return 0;
+}
+
+function computeStats(list){
+  const total = list.length;
+  const wins = list.filter(t=>t.result==='win').length;
+  const losses = list.filter(t=>t.result==='loss').length;
+  const winRate = total ? Math.round((wins/total)*100) : 0;
+  const totalR = list.reduce((s,t)=>s+rValue(t),0);
+  // current streak (most recent first)
+  const ordered = [...list].sort((a,b)=> new Date(b.date) - new Date(a.date));
+  let streak = 0, streakType = null;
+  for(const t of ordered){
+    if(t.result === 'be') break;
+    if(streakType === null){ streakType = t.result; streak = 1; }
+    else if(t.result === streakType){ streak++; }
+    else break;
+  }
+  return {total, winRate, totalR, streak, streakType};
+}
+
+function renderStats(){
+  const s = computeStats(filteredTrades());
+  const el = document.getElementById('stats');
+  el.innerHTML = `
+    <div class="stat"><b>${s.total}</b><span>Trades</span></div>
+    <div class="stat"><b>${s.winRate}%</b><span>Win rate</span></div>
+    <div class="stat ${s.totalR>0?'pos':s.totalR<0?'neg':''}"><b>${s.totalR>0?'+':''}${s.totalR.toFixed(1)}R</b><span>Total</span></div>
+    <div class="stat ${s.streakType==='win'?'pos':s.streakType==='loss'?'neg':''}"><b>${s.streak||0}</b><span>Racha ${s.streakType==='win'?'W':s.streakType==='loss'?'L':''}</span></div>
+  `;
+  const badge = document.getElementById('streakBadge');
+}
+
+function filteredTrades(){
+  if(activeFilter === 'all') return trades;
+  return trades.filter(t => t.instrument === activeFilter);
+}
+
+function renderFilters(){
+  const instruments = ['all', ...new Set(trades.map(t=>t.instrument))];
+  const labels = {all:'Todos'};
+  const el = document.getElementById('filters');
+  el.innerHTML = instruments.map(i => `<button class="chip ${activeFilter===i?'active':''}" data-filter="${i}">${labels[i]||i}</button>`).join('');
+  el.querySelectorAll('.chip').forEach(btn=>{
+    btn.onclick = ()=>{ activeFilter = btn.dataset.filter; renderAll(); };
+  });
+}
+
+function renderChart(){
+  const list = [...filteredTrades()].sort((a,b)=> new Date(a.date) - new Date(b.date));
+  const svg = document.getElementById('chart');
+  if(list.length === 0){ svg.innerHTML = ''; return; }
+  let cum = 0;
+  const pts = list.map(t => { cum += rValue(t); return cum; });
+  const min = Math.min(0, ...pts), max = Math.max(0, ...pts);
+  const range = (max - min) || 1;
+  const w = 300, h = 90, padY = 8;
+  const stepX = pts.length > 1 ? w / (pts.length - 1) : 0;
+  const coords = pts.map((v,i)=>{
+    const x = pts.length>1 ? i*stepX : w/2;
+    const y = h - padY - ((v - min)/range)*(h - padY*2);
+    return [x,y,v,list[i].result];
+  });
+  const zeroY = h - padY - ((0-min)/range)*(h-padY*2);
+  let svgContent = `<line x1="0" y1="${zeroY}" x2="${w}" y2="${zeroY}" stroke="#3f3f46" stroke-width="1" stroke-dasharray="3,3"/>`;
+  svgContent += `<polyline points="${coords.map(c=>c[0]+','+c[1]).join(' ')}" fill="none" stroke="#f59e0b" stroke-width="1.6"/>`;
+  coords.forEach(c=>{
+    const color = c[3]==='win' ? '#22c55e' : c[3]==='loss' ? '#ef4444' : '#a1a1aa';
+    svgContent += `<circle cx="${c[0]}" cy="${c[1]}" r="2.4" fill="${color}"/>`;
+  });
+  svg.innerHTML = svgContent;
+}
+
+function renderList(){
+  const list = [...filteredTrades()].sort((a,b)=> new Date(b.date) - new Date(a.date));
+  const el = document.getElementById('list');
+  if(list.length === 0){
+    el.innerHTML = `<div class="empty"><b>Aún no hay trades</b>Toca el botón “+” para registrar tu primera operación.</div>`;
+    return;
+  }
+  el.innerHTML = list.map(t=>{
+    const r = rValue(t);
+    const d = new Date(t.date);
+    const dateStr = d.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'2-digit'}) + ' ' + d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+    return `
+    <div class="trade" data-id="${t.id}">
+      <div class="row1">
+        <div class="tags">
+          <span class="tag">${t.instrument}</span>
+          <span class="tag dir-${t.direction}">${t.direction==='buy'?'BUY':'SELL'}</span>
+          <span class="tag">${t.setup}</span>
+        </div>
+        <span class="result ${t.result}">${t.result.toUpperCase()}</span>
+      </div>
+      <div class="row2">
+        <span>${dateStr} · ${t.session} · ${t.lot||'-'} lotes</span>
+        <span class="rval ${r>0?'pos':r<0?'neg':''}">${r>0?'+':''}${r.toFixed(1)}R</span>
+      </div>
+      ${t.notes ? `<div class="notes">${escapeHtml(t.notes)}</div>` : ''}
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.trade').forEach(card=>{
+    card.onclick = ()=> openSheet(card.dataset.id);
+  });
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function renderAll(){
+  renderStats();
+  renderChart();
+  renderFilters();
+  renderList();
+}
+
+// ---- Sheet / form logic ----
+const sheet = document.getElementById('sheet');
+const backdrop = document.getElementById('backdrop');
+
+function showSheet(){ backdrop.classList.add('show'); sheet.classList.add('show'); }
+function hideSheet(){ backdrop.classList.remove('show'); sheet.classList.remove('show'); }
+
+function setSeg(containerId, val){
+  document.querySelectorAll('#'+containerId+' button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.val === val);
+  });
+}
+document.getElementById('seg_dir').addEventListener('click', e=>{
+  if(e.target.tagName==='BUTTON'){ setSeg('seg_dir', e.target.dataset.val); }
+});
+document.getElementById('seg_result').addEventListener('click', e=>{
+  if(e.target.tagName==='BUTTON'){ setSeg('seg_result', e.target.dataset.val); }
+});
+
+document.getElementById('f_instrument').addEventListener('change', e=>{
+  document.getElementById('f_instrument_custom_wrap').style.display = e.target.value === 'otro' ? 'block' : 'none';
+});
+
+function resetForm(){
+  document.getElementById('tradeForm').reset();
+  setSeg('seg_dir','buy');
+  setSeg('seg_result','win');
+  document.getElementById('f_instrument_custom_wrap').style.display = 'none';
+  document.getElementById('f_date').value = new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+  document.getElementById('deleteBtn').style.display = 'none';
+  document.getElementById('sheetTitle').textContent = 'NUEVO TRADE';
+  editingId = null;
+}
+
+function openSheet(id){
+  resetForm();
+  if(id){
+    const t = trades.find(x=>x.id===id);
+    if(!t) return;
+    editingId = id;
+    document.getElementById('sheetTitle').textContent = 'EDITAR TRADE';
+    document.getElementById('deleteBtn').style.display = 'block';
+    const knownInstruments = ['US30.cash','US100.cash','XAUUSD'];
+    if(knownInstruments.includes(t.instrument)){
+      document.getElementById('f_instrument').value = t.instrument;
+    } else {
+      document.getElementById('f_instrument').value = 'otro';
+      document.getElementById('f_instrument_custom_wrap').style.display = 'block';
+      document.getElementById('f_instrument_custom').value = t.instrument;
+    }
+    setSeg('seg_dir', t.direction);
+    document.getElementById('f_session').value = t.session;
+    document.getElementById('f_setup').value = t.setup;
+    document.getElementById('f_lot').value = t.lot;
+    document.getElementById('f_rr').value = t.rr;
+    setSeg('seg_result', t.result);
+    document.getElementById('f_entry').value = t.entry||'';
+    document.getElementById('f_exit').value = t.exit||'';
+    document.getElementById('f_date').value = t.date.slice(0,16);
+    document.getElementById('f_notes').value = t.notes||'';
+  }
+  showSheet();
+}
+
+document.getElementById('addBtn').onclick = ()=> openSheet(null);
+document.getElementById('cancelBtn').onclick = hideSheet;
+backdrop.onclick = hideSheet;
+
+document.getElementById('deleteBtn').onclick = ()=>{
+  if(editingId && confirm('¿Eliminar este trade?')){
+    trades = trades.filter(t=>t.id!==editingId);
+    save(); renderAll(); hideSheet();
+  }
+};
+
+document.getElementById('tradeForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const instrumentSel = document.getElementById('f_instrument').value;
+  const instrument = instrumentSel === 'otro'
+    ? (document.getElementById('f_instrument_custom').value.trim() || 'Otro')
+    : instrumentSel;
+  const direction = document.querySelector('#seg_dir button.active').dataset.val;
+  const result = document.querySelector('#seg_result button.active').dataset.val;
+  const data = {
+    id: editingId || uid(),
+    instrument,
+    direction,
+    session: document.getElementById('f_session').value,
+    setup: document.getElementById('f_setup').value,
+    lot: parseFloat(document.getElementById('f_lot').value) || 0,
+    rr: parseFloat(document.getElementById('f_rr').value) || 0,
+    result,
+    entry: document.getElementById('f_entry').value,
+    exit: document.getElementById('f_exit').value,
+    date: new Date(document.getElementById('f_date').value).toISOString(),
+    notes: document.getElementById('f_notes').value.trim()
+  };
+  if(editingId){
+    trades = trades.map(t=> t.id===editingId ? data : t);
+  } else {
+    trades.push(data);
+  }
+  save();
+  renderAll();
+  hideSheet();
+});
+
+// ---- Export / Import ----
+document.getElementById('exportBtn').onclick = ()=>{
+  const blob = new Blob([JSON.stringify(trades, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'journal_jandres_backup_' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+};
+document.getElementById('importBtn').onclick = ()=> document.getElementById('importFile').click();
+document.getElementById('importFile').addEventListener('change', e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const data = JSON.parse(reader.result);
+      if(Array.isArray(data)){
+        if(confirm('Esto reemplazará tus trades actuales con los del respaldo. ¿Continuar?')){
+          trades = data;
+          save();
+          renderAll();
+        }
+      } else { alert('Archivo no válido.'); }
+    }catch(err){ alert('No se pudo leer el archivo.'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+// ---- Init ----
+load();
+renderAll();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
