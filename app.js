@@ -160,3 +160,27 @@ tension:0.4
 );
 
 updateRanking();
+
+trades = [
+
+{
+strategy:"Open Drive NY",
+result:"Win"
+},
+
+{
+strategy:"Open Drive NY",
+result:"Win"
+},
+
+{
+strategy:"ORB Momentum",
+result:"Win"
+},
+
+{
+strategy:"Silver Bullet",
+result:"Loss"
+}
+
+];
